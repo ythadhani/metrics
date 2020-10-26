@@ -1,13 +1,19 @@
 package main
 
 import (
+	"flag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"time"
 )
 
-var statusCodeMap = map[int]int{http.StatusOK: 1, http.StatusServiceUnavailable: 0}
+var (
+	statusCodeMap = map[int]int{http.StatusOK: 1, http.StatusServiceUnavailable: 0}
+	listenAddress string
+	gatherInterval int
+)
+
 
 func writeMetricsForURL(urlUpGauge, responseTimeGauge *prometheus.GaugeVec, url string) {
 	go func() {
@@ -28,12 +34,16 @@ func writeMetricsForURL(urlUpGauge, responseTimeGauge *prometheus.GaugeVec, url 
 			}
 			urlUpGauge.WithLabelValues(url).Set(float64(statusCode))
 			responseTimeGauge.WithLabelValues(url).Set(float64(elapsed))
-			time.Sleep(2*time.Second)
+			time.Sleep(time.Duration(gatherInterval)*time.Second)
 		}
 	}()
 }
 
 func main() {
+
+	flag.StringVar(&listenAddress, "listen-address", ":9090", "Listen address for Prometheus scrapes")
+	flag.IntVar(&gatherInterval, "gather-interval", 2, "URL probe interval in seconds")
+	flag.Parse()
 
 	urlUpGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "sample_external_url_up",
@@ -52,5 +62,5 @@ func main() {
 	writeMetricsForURL(urlUpGauge, responseTimeGauge,"https://httpstat.us/200")
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":9090", nil)
+	http.ListenAndServe(listenAddress, nil)
 }

@@ -4,8 +4,9 @@ metadata:
   name: metrics-pod
 spec:
   containers:
-    - name: metrics-container
+    - name: metrics
       image: ythadhani/test:metrics
+      args: ["-gather-interval=10"]
     - name: prometheus
       image: prom/prometheus
       args:
