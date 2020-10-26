@@ -1,10 +1,12 @@
-HIDE ?= @
 APP := metrics
 
-image: clean build
-	$(HIDE)docker build -t "$(APP)" .
+image: clean build-linux
+	docker build -t "$(APP)" .
 
 build:
+	go build -o $(APP) main.go
+
+build-linux:
 	@echo "Building..."
 	env GOOS=linux GOARCH=amd64  go build -o $(APP) main.go
 
